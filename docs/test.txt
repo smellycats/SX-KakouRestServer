@@ -1,0 +1,1 @@
+docker run -t -i -d --restart=always --name hcq_kakou_ser --privileged=true -p 8090:8090 -v /home/core/GitHub:/home centos-python/orc-client gunicorn -c /home/SX-KakouRestServer/gun.py --chdir /home/SX-KakouRestServer run:app
