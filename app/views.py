@@ -286,7 +286,7 @@ def get_kkdd_by_id(kkdd_id):
     return k.kkdd_name
 
 @app.route('/kkdd', methods=['GET'])
-@limiter.limit('60/minute')
+@limiter.limit('300/minute')
 @auth.login_required
 def kkdd_get():
     try:
@@ -301,7 +301,7 @@ def kkdd_get():
 
 
 @app.route('/kkdd/<string:kkdd_id>', methods=['GET'])
-@limiter.limit('60/minute')
+@limiter.limit('300/minute')
 @auth.login_required
 def kkdd2_get(kkdd_id):
     try:
@@ -316,7 +316,7 @@ def kkdd2_get(kkdd_id):
 
 
 @app.route('/kakou/<int:start_id>/<int:end_id>', methods=['GET'])
-@limiter.limit('60/minute')
+@limiter.limit('300/minute')
 @auth.login_required
 def kakou_get(start_id, end_id):
     try:
@@ -348,7 +348,7 @@ def kakou_get(start_id, end_id):
 
 
 @app.route('/maxid', methods=['GET'])
-@limiter.limit('60/minute')
+@limiter.limit('600/minute')
 @auth.login_required
 def maxid_get():
     try:
@@ -361,7 +361,7 @@ def maxid_get():
 
 
 @app.route('/stat', methods=['GET'])
-@limiter.limit('60/minute')
+@limiter.limit('300/minute')
 @auth.login_required
 def stat_get():
     try:
@@ -393,7 +393,7 @@ def stat_get():
 
 
 @app.route('/bkcp', methods=['GET'])
-@limiter.limit('60/minute')
+@limiter.limit('300/minute')
 @auth.login_required
 def bkcp_get():
     try:
@@ -416,7 +416,7 @@ def bkcp_get():
 
 
 @app.route('/bkcp/<string:hphm>', methods=['GET'])
-@limiter.limit('60/minute')
+@limiter.limit('300/minute')
 @auth.login_required
 def bkcp_by_hphm_get(hphm):
     try:
