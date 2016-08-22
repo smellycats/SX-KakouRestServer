@@ -8,3 +8,5 @@ arrow>=0.5.4
 requests>=2.5.0
 itsdangerous>=0.2.4
 passlib>=1.6.2
+gevent>=1.0.2
+cx-Oracle>=5.1.3
