@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import logging
 
 import arrow
@@ -43,7 +43,7 @@ from . import views
 def after_request(response):
     """访问信息写入日志"""
     access_logger.info('%s - - [%s] "%s %s HTTP/1.1" %s %s'
-                       % (request.remote_addr,
+                       % (request.headers.get("X-Real-IP", request.remote_addr),
                           arrow.now().format('DD/MMM/YYYY:HH:mm:ss ZZ'),
                           request.method, request.url, response.status_code,
                           response.content_length))
