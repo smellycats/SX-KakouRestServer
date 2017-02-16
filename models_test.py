@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import arrow
 
 from app import db, app
@@ -67,7 +67,6 @@ def test_kkdd2():
 def test_kkdd3():
     k = db.session.query(Kkdd).filter(Kkdd.kkdd_id.like('441302%')).all()
     print k
-
 
 def test_stat():
     sql = "select count(*) from cltx where jgsj >= to_date('2016-06-19 00:00:00', 'yyyy-mm-dd hh24:mi:ss') and jgsj <= to_date('2016-06-19 00:05:00', 'yyyy-mm-dd hh24:mi:ss') and wzdd='\xe4\xba\xa4\xe8\xad\xa6\xe6\x94\xaf\xe9\x98\x9f\xe5\x8d\xa1\xe5\x8f\xa3'"
