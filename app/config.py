@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 
 class Config(object):
@@ -14,7 +14,7 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = 'sqlite:///../kakou.db'
     # 数据库连接绑定 dict
     SQLALCHEMY_BINDS = {
-        'kakou': 'oracle://kakou:hzkk2015@sxkj@10.47.187.166/kakou'
+        'kakou': 'oracle://kakou:test@test/kakou'
     }
     # 连接池大小 int
     # SQLALCHEMY_POOL_SIZE = 5
@@ -35,7 +35,8 @@ class Config(object):
 	u'黄牌': 1,
 	u'蓝牌': 2,
 	u'黑牌': 3,
-	u'其他': 4
+	u'绿牌': 4,
+        u'其他': 9
     }
     # 号牌颜色代码
     HPYS_CODE = {
@@ -43,6 +44,7 @@ class Config(object):
 	u'黄牌': 'YL',
 	u'蓝牌': 'BU',
 	u'黑牌': 'BK',
+	u'绿牌': 'GN',
 	u'其他': 'QT'
     }
     # 方向代码
