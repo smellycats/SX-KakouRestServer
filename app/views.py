@@ -316,7 +316,7 @@ def kkdd2_get(kkdd_id):
 
 
 @app.route('/kakou/<int:start_id>/<int:end_id>', methods=['GET'])
-@limiter.limit('300/minute')
+@limiter.limit('3000/minute')
 @auth.login_required
 def kakou_get(start_id, end_id):
     try:
@@ -339,12 +339,58 @@ def kakou_get(start_id, end_id):
             item['hpzl'] = i.hpzl
 	    item['kkbh'] = i.kkbh
 	    item['clbj'] = i.clbj
-	    item['imgurl'] = 'http://{0}/{1}/{2}'.format(app.config['IMG_IP'].get(i.tpwz, '10.47.187.166'), i.qmtp, i.tjtp.replace('\\', '/').encode('utf8'))
+	    try:
+	        item['imgurl'] = 'http://{0}/{1}/{2}'.format(app.config['IMG_IP'].get(i.tpwz, '10.47.187.166'), i.qmtp, i.tjtp.replace('\\', '/').encode('utf8'))
+	    except Exception as e:
+		logger.exception(e)
+		item['imgurl'] = ''
 	    items.append(item)
 
 	return jsonify({'items': items, 'total_count': len(items)})	    
     except Exception as e:
 	logger.error(e)
+
+
+@app.route('/kakou2/<string:st>/<string:et>', methods=['GET'])
+@limiter.limit('3000/minute')
+@auth.login_required
+def kakou2_get(st, et):
+    try:
+        sql = u"select id,hphm,jgsj,hpys,wzdd,fxbh,cdbh,clsd,hpzl,kkbh,clbj,tpwz,qmtp,tjtp from cltx where jgsj >= to_date('{0}', 'yyyy-mm-dd hh24:mi:ss') and jgsj < to_date('{1}', 'yyyy-mm-dd hh24:mi:ss')".format(st, et)
+	q = db.get_engine(app, bind='kakou').execute(sql)
+	items = []
+        for i in q.fetchall():
+	    item = {}
+	    item['id'] = i[0]
+	    hphm = i[1]
+	    if hphm is None or hphm == '':
+		hphm = '-'
+	    item['hphm'] = hphm.decode('utf-8')
+	    item['jgsj'] = str(i[2])
+	    item['hpys'] = i[3].decode('utf-8')
+	    item['hpys_id'] = app.config['HPYS_ID'].get(i[3].decode('utf-8'), 9)
+	    item['hpys_code'] = app.config['HPYS_CODE'].get(i[3].decode('utf-8'), 'QT')
+	    kkdd = i[4]
+	    if kkdd is None:
+		kkdd = ''
+	    item['kkdd'] = kkdd.decode('utf-8')
+	    item['kkdd_id'] = get_kkdd_by_name(kkdd.decode('utf-8'))
+	    item['fxbh'] = i[5].decode('utf-8')
+	    item['fxbh_code'] = app.config['FXBH_CODE'].get(i[5].decode('utf-8'), 'QT')
+	    item['cdbh'] = int(i[6])
+	    item['clsd'] = int(i[7])
+            item['hpzl'] = i[8]
+	    item['kkbh'] = i[9]
+	    item['clbj'] = i[10]
+	    try:
+	        item['imgurl'] = 'http://{0}/{1}/{2}'.format(app.config['IMG_IP'].get(i[11], '10.47.187.166'), i[12], i[13].decode('utf-8').replace('\\', '/').encode('utf8'))
+	    except Exception as e:
+		logger.exception(e)
+		item['imgurl'] = ''
+	    items.append(item)
+	return jsonify({'items': items, 'total_count': len(items)})
+    except Exception as e:
+	logger.exception(e)
 
 
 @app.route('/maxid', methods=['GET'])
