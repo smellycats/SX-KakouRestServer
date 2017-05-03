@@ -44,7 +44,7 @@ def after_request(response):
     """访问信息写入日志"""
     access_logger.info('%s - - [%s] "%s %s HTTP/1.1" %s %s'
                        % (request.headers.get("X-Real-IP", request.remote_addr),
-                          arrow.now().format('DD/MMM/YYYY:HH:mm:ss ZZ'),
+                          arrow.now('PRC').format('DD/MMM/YYYY:HH:mm:ss ZZ'),
                           request.method, request.url, response.status_code,
                           response.content_length))
     response.headers['Server'] = app.config['HEADER_SERVER']
