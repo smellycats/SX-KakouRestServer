@@ -27,28 +27,19 @@ class Config(object):
     # 图片服务器IP
     IMG_IP = {
 	'HZKK-DATASTOR01': '10.47.187.165:8092',
-	'HZKK-DATASTOR02': '10.47.187.166'
+	'HZKK-DATASTOR02': '10.47.187.166:8082'
     }
     # 号牌颜色ID
-    HPYS_ID = {
-	u'白牌': 0,
-	u'黄牌': 1,
-	u'蓝牌': 2,
-	u'黑牌': 3,
-	u'绿牌': 4,
-        u'其他': 9
-    }
-    # 号牌颜色代码
-    HPYS_CODE = {
-	u'白牌': 'WT',
-	u'黄牌': 'YL',
-	u'蓝牌': 'BU',
-	u'黑牌': 'BK',
-	u'绿牌': 'GN',
-	u'其他': 'QT'
+    HPYS2CODE = {
+	u'白牌': {'id': 0, 'code': 'WT'},
+	u'黄牌': {'id': 1, 'code': 'YL'},
+	u'蓝牌': {'id': 2, 'code': 'BU'},
+	u'黑牌': {'id': 3, 'code': 'BK'},
+	u'绿牌': {'id': 4, 'code': 'GN'},
+        u'其他': {'id': 9, 'code': 'QT'}
     }
     # 方向代码
-    FXBH_CODE = {
+    FXBH2CODE = {
 	u'进城': 'IN',
 	u'出城': 'OT',
 	u'由东往西': 'EW',
