@@ -42,11 +42,11 @@ from . import views
 @app.after_request
 def after_request(response):
     """访问信息写入日志"""
-    access_logger.info('%s - - [%s] "%s %s HTTP/1.1" %s %s'
-                       % (request.headers.get("X-Real-IP", request.remote_addr),
-                          arrow.now('PRC').format('DD/MMM/YYYY:HH:mm:ss ZZ'),
-                          request.method, request.url, response.status_code,
-                          response.content_length))
+    info = u'{0} - - [{1}] "{2} {3} HTTP/1.1" {4} {5}'.format(
+        request.headers.get("X-Real-IP", request.remote_addr),
+        arrow.now('PRC').format('DD/MMM/YYYY:HH:mm:ss ZZ'), request.method,
+        request.path, response.status_code, response.content_length)
+    access_logger.info(info)
     response.headers['Server'] = app.config['HEADER_SERVER']
     #response.headers['Content-Type'] = 'application/json; charset=utf-8'
     #response.headers['Access-Control-Allow-Origin'] = '*'
