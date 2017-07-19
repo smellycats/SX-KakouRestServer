@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 import json
 from functools import wraps
 import shutil
@@ -61,10 +61,11 @@ def index_get():
     result = {
         'user_url': 'http://%suser{/user_id}' % (request.url_root),
         'scope_url': 'http://%sscope' % (request.url_root),
+        # 'token_url': 'http://%stoken' % (request.url_root),
+	'kkdd_url': 'http://%skkdd{/kkdd_id}' % (request.url_root),
 	'maxid_url': 'http://%smaxid' % (request.url_root),
-	'stat_url': 'http://%sstat?q={}' % (request.url_root),
-        'cltx_url': 'http://%scltx?q={}' % (request.url_root),
-        'bkcp_url': 'http://%sbkcp?q={}' % (request.url_root)
+	'stat_url': 'http://%sstat{/st}{/et}{/kkdd_id}' % (request.url_root),
+        'kakou_url': 'http://%skakou{/start_id}{/end_id}' % (request.url_root)
     }
     header = {'Cache-Control': 'public, max-age=60, s-maxage=60'}
     return jsonify(result), 200, header
@@ -210,30 +211,54 @@ def scope_list_get():
     items = map(helper.row2dict, Scope.query.all())
     return jsonify({'total_count': len(items), 'items': items}), 200
 
-@cache.memoize(60)
-def get_kkdd_by_name(name):
-    k = Kkdd.query.filter_by(kkdd_name=name).first()
-    if k is None:
-	return None
-    return k.kkdd_id
 
 @cache.memoize(60)
-def get_kkdd_by_id(kkdd_id):
-    k = Kkdd.query.filter_by(kkdd_id=kkdd_id).first()
-    if k is None:
-	return None
-    return k.kkdd_name
+def get_kkdd_name_dict():
+    d = {}
+    for i in Kkdd.query.all():
+    	d[i.kkdd_name] = i.kkdd_id
+    return d
 
-@cache.memoize(2)
-def get_maxid():
-    q = db.session.query(func.max(Cltx.id)).first()
-    return q[0]
+@cache.memoize(60)
+def get_kkdd_id_dict():
+    d = {}
+    for i in Kkdd.query.all():
+    	d[i.kkdd_id] = i.kkdd_name
+    return d
 
-@cache.memoize(60*10)
-def get_cltx_by_id(id):
-    i = Cltx.query.filter_by(id=id).first()
+
+@app.route('/cltx/maxid', methods=['GET'])
+@limiter.limit('6000/minute')
+@auth.login_required
+def maxid_get():
+    try:
+	cached = cache.get('maxid')
+	if cached:
+	    return jsonify({'maxid': cached}), 200
+	q = db.session.query(func.max(Cltx.id)).first()
+	if q:
+	    cache.set('maxid', q[0], timeout=1)
+	    return jsonify({'maxid': q[0]}), 200
+    except Exception as e:
+	logger.error(e)
+
+
+@app.route('/cltx/<int:id>', methods=['GET'])
+@limiter.limit('6000/minute')
+@auth.login_required
+def cltx_get(id):
+    try:
+        cached = cache.get(str(id))
+        if cached:
+	    return jsonify(cached), 200
+        i = Cltx.query.filter_by(id=id).first()
+    except Exception as e:
+	logger.exception(e)
+	raise
     if i is None:
-	return None
+	cache.set(str(id), None, timeout=60)
+	abort(404)
+
     if i.hphm is None or i.hphm == '':
 	hphm = '-'
     else:
@@ -243,64 +268,44 @@ def get_cltx_by_id(id):
     except Exception as e:
 	logger.exception(e)
 	imgurl = ''
-    item = {
-	'id': i.id,
-	'hphm': hphm,
-	'jgsj': i.jgsj.strftime('%Y-%m-%d %H:%M:%S'),
-	'hpys': i.hpys,
-	'hpys_id': app.config['HPYS2CODE'].get(i.hpys, {'id': 9, 'code': 'QT'})['id'],
-	'hpys_code': app.config['HPYS2CODE'].get(i.hpys, {'id': 9, 'code': 'QT'})['code'],
-	'kkdd': i.wzdd,
-	'kkdd_id': get_kkdd_by_name(i.wzdd),
-	'fxbh': i.fxbh,
-	'fxbh_code': app.config['FXBH2CODE'].get(i.fxbh, 'QT'),
-	'cdbh': int(i.cdbh),
-	'clsd': int(i.clsd),
-	'hpzl': i.hpzl,
-	'kkbh': i.kkbh,
-	'clbj': i.clbj,
-	'imgurl': imgurl
-    }
-    return item
-
-
-@app.route('/maxid', methods=['GET'])
-@limiter.limit('6000/minute')
-#@auth.login_required
-def maxid_get():
     try:
-	return jsonify({'maxid': get_maxid()}), 200
-    except Exception as e:
-	logger.error(e)
-
-
-@app.route('/cltx/<int:id>', methods=['GET'])
-@limiter.limit('6000/minute')
-#@auth.login_required
-def cltx_get(id):
-    try:
-	item = get_cltx_by_id(id)
-	if item is None:
-	    abort(404)
+        item = {
+	    'id': i.id,
+	    'hphm': hphm,
+	    'jgsj': i.jgsj.strftime('%Y-%m-%d %H:%M:%S'),
+	    'hpys': i.hpys,
+	    'hpys_id': app.config['HPYS2CODE'].get(i.hpys, {'id': 9, 'code': 'QT'})['id'],
+	    'hpys_code': app.config['HPYS2CODE'].get(i.hpys, {'id': 9, 'code': 'QT'})['code'],
+	    'kkdd': i.wzdd,
+	    'kkdd_id': get_kkdd_name_dict().get(i.wzdd, None),
+	    'fxbh': i.fxbh,
+	    'fxbh_code': app.config['FXBH2CODE'].get(i.fxbh, 'QT'),
+	    'cdbh': int(i.cdbh),
+	    'clsd': int(i.clsd),
+	    'hpzl': i.hpzl,
+	    'kkbh': i.kkbh,
+	    'clbj': i.clbj,
+	    'imgurl': imgurl
+        }
+	cache.set(str(id), item, timeout=60*30)
+	return jsonify(item), 200
     except Exception as e:
 	logger.exception(e)
-    return jsonify(item), 200
 
 
 @app.route('/cltx', methods=['GET'])
 @limiter.limit('6000/minute')
-#@auth.login_required
+@auth.login_required
 def cltx_list_get():
+    q = request.args.get('q', None)
+    if q is None:
+	abort(400)
     try:
-	q = request.args.get('q', None)
-	if q is None:
-	    abort(400)
-	try:
-	    args = json.loads(q)
-	except Exception as e:
-	    logger.error(e)
-	    abort(400)
-	
+	args = json.loads(q)
+    except Exception as e:
+	logger.error(e)
+	abort(400)
+    try:
 	limit = int(args.get('per_page', 20))
 	offset = (int(args.get('page', 1)) - 1) * limit
 	s = db.session.query(Cltx)
@@ -313,16 +318,25 @@ def cltx_list_get():
 	if args.get('et', None) is not None:
 	    s = s.filter(Cltx.jgsj <= arrow.get(args['et']).datetime.replace(tzinfo=None))
 	if args.get('kkdd', None) is not None:
-	    kkdd_name = get_kkdd_by_id(args['kkdd'])
+	    kkdd_name = get_kkdd_id_dict().get(args['kkdd'], None)
 	    s = s.filter(Cltx.wzdd == kkdd_name)
 	if args.get('hphm', None) is not None:
 	    s = s.filter(Cltx.hphm == args['hphm'])
 	    if args.get('st', None) is None:
 		s = s.filter(Cltx.jgsj >= arrow.now('PRC').replace(days=-1).datetime.replace(tzinfo=None))
-	
+        result = s.limit(limit).offset(offset).all()
+	# 总数
 	total = s.count()
+	# 结果集为空
+        if len(result) == 0:
+	    return jsonify({'total_count': total, 'items': []}), 200
+	
+	# 结果集第一个元素是否有缓存
+	cached = cache.get(str(result[0].id))
+	# 卡口地点名称字典
+	kkdd_name_dict = get_kkdd_name_dict()
 	items = []
-	for i in s.limit(limit).offset(offset).all():
+	for i in result:
 	    if i.hphm is None or i.hphm == '':
 		hphm = '-'
 	    else:
@@ -332,7 +346,7 @@ def cltx_list_get():
 	    except Exception as e:
 		logger.exception(e)
 		imgurl = ''
-	    items.append({
+	    item = {
 		'id': i.id,
 		'hphm': hphm,
 		'jgsj': i.jgsj.strftime('%Y-%m-%d %H:%M:%S'),
@@ -340,7 +354,7 @@ def cltx_list_get():
 		'hpys_id': app.config['HPYS2CODE'].get(i.hpys, {'id': 9, 'code': 'QT'})['id'],
 		'hpys_code': app.config['HPYS2CODE'].get(i.hpys, {'id': 9, 'code': 'QT'})['code'],
 		'kkdd': i.wzdd,
-	        'kkdd_id': get_kkdd_by_name(i.wzdd),
+	        'kkdd_id': kkdd_name_dict.get(i.wzdd, None),
 	    	'fxbh': i.fxbh,
 	    	'fxbh_code': app.config['FXBH2CODE'].get(i.fxbh, 'QT'),
 	    	'cdbh': int(i.cdbh),
@@ -349,55 +363,55 @@ def cltx_list_get():
 	        'kkbh': i.kkbh,
 	        'clbj': i.clbj,
 	        'imgurl': imgurl
-	    })
+	    }
+	    items.append(item)
+	    if cached is None:
+		cache.set(str(i.id), item, timeout=60*30)
+	return jsonify({'total_count': total, 'items': items}), 200
     except Exception as e:
 	logger.exception(e)
-    return jsonify({'total_count': total, 'items': items}), 200
 
 
 @app.route('/stat', methods=['GET'])
 @limiter.limit('6000/minute')
-#@auth.login_required
+@auth.login_required
 def stat_get():
+    q = request.args.get('q', None)
+    if q is None:
+	abort(400)
     try:
-	q = request.args.get('q', None)
-	if q is None:
-	    abort(400)
-	try:
-	    args = json.loads(q)
-	except Exception as e:
-	    logger.error(e)
-	    abort(400)
-	
+	args = json.loads(q)
+    except Exception as e:
+	logger.error(e)
+	abort(400)
+    try:
 	s = db.session.query(Cltx)
 	if args.get('st', None) is not None:
 	    s = s.filter(Cltx.jgsj >= arrow.get(args['st']).datetime.replace(tzinfo=None))
 	if args.get('et', None) is not None:
 	    s = s.filter(Cltx.jgsj <= arrow.get(args['et']).datetime.replace(tzinfo=None))
 	if args.get('kkdd', None) is not None:
-	    kkdd_name = get_kkdd_by_id(args['kkdd'])
+	    kkdd_name = get_kkdd_id_dict().get(args['kkdd'], None)
 	    s = s.filter(Cltx.wzdd == kkdd_name)
-	
-	total = s.count()
+
+	return jsonify({'count': s.count()}), 200
     except Exception as e:
 	logger.exception(e)
-    return jsonify({'count': total}), 200
 
 
 @app.route('/bkcp', methods=['GET'])
 @limiter.limit('3000/minute')
-#@auth.login_required
+@auth.login_required
 def bkcp_list_get():
+    q = request.args.get('q', None)
+    if q is None:
+	abort(400)
     try:
-	q = request.args.get('q', None)
-	if q is None:
-	    abort(400)
-	try:
-	    args = json.loads(q)
-	except Exception as e:
-	    logger.error(e)
-	    abort(400)
-	
+	args = json.loads(q)
+    except Exception as e:
+	logger.error(e)
+	abort(400)
+    try:
 	limit = int(args.get('per_page', 20))
 	offset = (int(args.get('page', 1)) - 1) * limit
 	s = db.session.query(Bkcp)
@@ -419,7 +433,7 @@ def bkcp_list_get():
 		'mobiles': mobiles,
 		'memo': i.memo
 	    })
+	return jsonify({'total_count': total, 'items': items}), 200
     except Exception as e:
 	logger.exception(e)
-    return jsonify({'total_count': total, 'items': items}), 200
 
