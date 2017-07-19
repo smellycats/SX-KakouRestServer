@@ -18,6 +18,12 @@ class Config(object):
     }
     # 连接池大小 int
     # SQLALCHEMY_POOL_SIZE = 5
+    # 缓存类型
+    CACHE_TYPE = 'redis'
+    CACHE_REDIS_HOST = 'db'
+    CACHE_REDIS_PORT = 6379
+    CACHE_REDIS_DB = 0
+    CACHE_REDIS_PASSWORD = ''
     # 用户权限范围 dict
     SCOPE_USER = {}
     # 白名单启用 bool
@@ -26,8 +32,8 @@ class Config(object):
     WHITE_LIST = set()
     # 图片服务器IP
     IMG_IP = {
-	'HZKK-DATASTOR01': '10.47.187.165:8092',
-	'HZKK-DATASTOR02': '10.47.187.166:8082'
+	'HZKK-DATASTOR01': '127.0.0.1:8092',
+	'HZKK-DATASTOR02': '127.0.0.1:8082'
     }
     # 号牌颜色ID
     HPYS2CODE = {
