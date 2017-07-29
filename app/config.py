@@ -11,19 +11,21 @@ class Config(object):
     # token生存周期，默认2小时 int
     EXPIRES = 7200
     # 数据库连接 string
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///../kakou.db'
+    SQLALCHEMY_DATABASE_URI = 'oracle://username:password@10.123.123.123:123/sid'
     # 数据库连接绑定 dict
     SQLALCHEMY_BINDS = {
-        'kakou': 'oracle://kakou:test@test/kakou'
+        'kakou': 'sqlite:///../kakou.db'
     }
     # 连接池大小 int
-    # SQLALCHEMY_POOL_SIZE = 5
+    #SQLALCHEMY_POOL_SIZE = 10
     # 缓存类型
     CACHE_TYPE = 'redis'
     CACHE_REDIS_HOST = 'db'
     CACHE_REDIS_PORT = 6379
-    CACHE_REDIS_DB = 0
+    CACHE_REDIS_DB = 5
     CACHE_REDIS_PASSWORD = ''
+    # 缓存时间
+    CACHE_TIME = 60 * 30
     # 用户权限范围 dict
     SCOPE_USER = {}
     # 白名单启用 bool
@@ -32,8 +34,6 @@ class Config(object):
     WHITE_LIST = set()
     # 图片服务器IP
     IMG_IP = {
-	'HZKK-DATASTOR01': '127.0.0.1:8092',
-	'HZKK-DATASTOR02': '127.0.0.1:8082'
     }
     # 号牌颜色ID
     HPYS2CODE = {
@@ -61,6 +61,11 @@ class Config(object):
 	'WE': u'由西往东',
 	'SN': u'由南往北',
 	'NS': u'由北往南'
+    }
+    # 卡口编号
+    KKBH2KKDD = {
+    }
+    KKDD2KKBH = {
     }
 
 

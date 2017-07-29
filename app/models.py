@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 import arrow
 
 from . import db
@@ -7,6 +7,7 @@ from . import db
 class Users(db.Model):
     """用户"""
     __tablename__ = 'users'
+    __bind_key__ = 'kakou'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True)
     password = db.Column(db.String(128))
@@ -40,6 +41,7 @@ class Users(db.Model):
 class Scope(db.Model):
     """权限范围"""
     __tablename__ = 'scope'
+    __bind_key__ = 'kakou'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
 
@@ -52,6 +54,7 @@ class Scope(db.Model):
 class Kkdd(db.Model):
     """卡口地点"""
     __tablename__ = 'kkdd'
+    __bind_key__ = 'kakou'
     id = db.Column(db.Integer, primary_key=True)
     kkdd_id = db.Column(db.String(256))
     kkdd_name = db.Column(db.String(256))
@@ -73,7 +76,6 @@ class Kkdd(db.Model):
 class Cltx(db.Model):
     """用户cltx表id关联"""
     __tablename__ = 'cltx'
-    __bind_key__ = 'kakou'
     id = db.Column(db.Integer, primary_key=True)
     fxbh = db.Column(db.String(16))
     hphm = db.Column(db.String(30))
@@ -135,7 +137,6 @@ class Cltx(db.Model):
 class Bkcp(db.Model):
     """布控车牌"""
     __tablename__ = 'bkcp'
-    __bind_key__ = 'kakou'
     id = db.Column(db.Integer, primary_key=True)
     bcdw = db.Column(db.String(60))
     bcxw = db.Column(db.String(50))
