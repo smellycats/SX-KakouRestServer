@@ -14,7 +14,7 @@ from sqlalchemy import func
 from . import db, app, auth, cache, limiter, logger, access_logger
 from models import *
 import helper
-
+import helper_kk
 
 def verify_addr(f):
     """IP地址白名单"""
@@ -87,6 +87,7 @@ def user_get(user_id):
         'banned': user.banned
     }
     return jsonify(result), 200
+
 
 @app.route('/user', methods=['GET'])
 @limiter.limit('5000/hour')
@@ -212,21 +213,6 @@ def scope_list_get():
     return jsonify({'total_count': len(items), 'items': items}), 200
 
 
-@cache.memoize(60)
-def get_kkdd_name_dict():
-    d = {}
-    for i in Kkdd.query.all():
-    	d[i.kkdd_name] = i.kkdd_id
-    return d
-
-@cache.memoize(60)
-def get_kkdd_id_dict():
-    d = {}
-    for i in Kkdd.query.all():
-    	d[i.kkdd_id] = i.kkdd_name
-    return d
-
-
 @app.route('/cltx/maxid', methods=['GET'])
 @limiter.limit('6000/minute')
 @auth.login_required
@@ -240,7 +226,7 @@ def maxid_get():
 	    cache.set('maxid', q[0], timeout=1)
 	    return jsonify({'maxid': q[0]}), 200
     except Exception as e:
-	logger.error(e)
+	logger.exception(e)
 
 
 @app.route('/cltx/<int:id>', methods=['GET'])
@@ -256,28 +242,18 @@ def cltx_get(id):
 	logger.exception(e)
 	raise
     if i is None:
-	cache.set(str(id), None, timeout=60)
+	cache.set(str(id), None, timeout=30)
 	abort(404)
-
-    if i.hphm is None or i.hphm == '':
-	hphm = '-'
-    else:
-	hphm = i.hphm
-    try:
-	imgurl = 'http://{0}/{1}/{2}'.format(app.config['IMG_IP'].get(i.tpwz, ''), i.qmtp, i.tjtp.replace('\\', '/'))
-    except Exception as e:
-	logger.exception(e)
-	imgurl = ''
     try:
         item = {
 	    'id': i.id,
-	    'hphm': hphm,
+	    'hphm': helper_kk.build_hphm(i),
 	    'jgsj': i.jgsj.strftime('%Y-%m-%d %H:%M:%S'),
 	    'hpys': i.hpys,
 	    'hpys_id': app.config['HPYS2CODE'].get(i.hpys, {'id': 9, 'code': 'QT'})['id'],
 	    'hpys_code': app.config['HPYS2CODE'].get(i.hpys, {'id': 9, 'code': 'QT'})['code'],
 	    'kkdd': i.wzdd,
-	    'kkdd_id': get_kkdd_name_dict().get(i.wzdd, None),
+	    'kkdd_id': helper_kk.build_kkdd_id(i),
 	    'fxbh': i.fxbh,
 	    'fxbh_code': app.config['FXBH2CODE'].get(i.fxbh, 'QT'),
 	    'cdbh': int(i.cdbh),
@@ -285,9 +261,9 @@ def cltx_get(id):
 	    'hpzl': i.hpzl,
 	    'kkbh': i.kkbh,
 	    'clbj': i.clbj,
-	    'imgurl': imgurl
+	    'imgurl': helper_kk.build_url(i)
         }
-	cache.set(str(id), item, timeout=60*30)
+	cache.set(str(id), item, timeout=app.config['CACHE_TIME'])
 	return jsonify(item), 200
     except Exception as e:
 	logger.exception(e)
@@ -308,53 +284,46 @@ def cltx_list_get():
     try:
 	limit = int(args.get('per_page', 20))
 	offset = (int(args.get('page', 1)) - 1) * limit
-	s = db.session.query(Cltx)
+	query = db.session.query(Cltx)
 	if args.get('startid', None) is not None:
-	    s = s.filter(Cltx.id >= args['startid'])
+	    query = query.filter(Cltx.id >= args['startid'])
 	if args.get('endid', None) is not None:
-	    s = s.filter(Cltx.id <= args['endid'])
+	    query = query.filter(Cltx.id <= args['endid'])
 	if args.get('st', None) is not None:
-	    s = s.filter(Cltx.jgsj >= arrow.get(args['st']).datetime.replace(tzinfo=None))
+	    query = query.filter(Cltx.jgsj >= arrow.get(args['st']).datetime.replace(tzinfo=None))
 	if args.get('et', None) is not None:
-	    s = s.filter(Cltx.jgsj <= arrow.get(args['et']).datetime.replace(tzinfo=None))
+	    query = query.filter(Cltx.jgsj <= arrow.get(args['et']).datetime.replace(tzinfo=None))
 	if args.get('kkdd', None) is not None:
-	    kkdd_name = get_kkdd_id_dict().get(args['kkdd'], None)
-	    s = s.filter(Cltx.wzdd == kkdd_name)
+	    if app.config.get('KKDD2KKBH', None) is None:
+	        query = query.filter(Cltx.wzdd == helper_kk.get_kkdd_id_dict().get(args['kkdd'], None))
+	    else:
+		query = query.filter(Cltx.kkbh == app.config['KKDD2KKBH'].get(args['kkdd'], None))
+	if args.get('fxbh', None) is not None:
+	    query = query.filter(Cltx.fxbh == app.config['CODE2FXBH'].get(args['fxbh'], None))
 	if args.get('hphm', None) is not None:
-	    s = s.filter(Cltx.hphm == args['hphm'])
+	    query = query.filter(Cltx.hphm == args['hphm'])
 	    if args.get('st', None) is None:
-		s = s.filter(Cltx.jgsj >= arrow.now('PRC').replace(days=-1).datetime.replace(tzinfo=None))
-        result = s.limit(limit).offset(offset).all()
-	# 总数
-	total = s.count()
+		query = query.filter(Cltx.jgsj >= arrow.now('PRC').replace(days=-1).datetime.replace(tzinfo=None))
+        result = query.limit(limit).offset(offset).all()
+
 	# 结果集为空
         if len(result) == 0:
-	    return jsonify({'total_count': total, 'items': []}), 200
-	
+	    return jsonify({'total_count': 0, 'items': []}), 200
+	# 总数
+	total = query.count()
 	# 结果集第一个元素是否有缓存
 	cached = cache.get(str(result[0].id))
-	# 卡口地点名称字典
-	kkdd_name_dict = get_kkdd_name_dict()
 	items = []
 	for i in result:
-	    if i.hphm is None or i.hphm == '':
-		hphm = '-'
-	    else:
-		hphm = i.hphm
-	    try:
-	        imgurl = 'http://{0}/{1}/{2}'.format(app.config['IMG_IP'].get(i.tpwz, ''), i.qmtp, i.tjtp.replace('\\', '/'))
-	    except Exception as e:
-		logger.exception(e)
-		imgurl = ''
 	    item = {
 		'id': i.id,
-		'hphm': hphm,
+		'hphm': helper_kk.build_hphm(i),
 		'jgsj': i.jgsj.strftime('%Y-%m-%d %H:%M:%S'),
 		'hpys': i.hpys,
 		'hpys_id': app.config['HPYS2CODE'].get(i.hpys, {'id': 9, 'code': 'QT'})['id'],
 		'hpys_code': app.config['HPYS2CODE'].get(i.hpys, {'id': 9, 'code': 'QT'})['code'],
 		'kkdd': i.wzdd,
-	        'kkdd_id': kkdd_name_dict.get(i.wzdd, None),
+	        'kkdd_id': helper_kk.build_kkdd_id(i),
 	    	'fxbh': i.fxbh,
 	    	'fxbh_code': app.config['FXBH2CODE'].get(i.fxbh, 'QT'),
 	    	'cdbh': int(i.cdbh),
@@ -362,11 +331,11 @@ def cltx_list_get():
                 'hpzl': i.hpzl,
 	        'kkbh': i.kkbh,
 	        'clbj': i.clbj,
-	        'imgurl': imgurl
+	        'imgurl': helper_kk.build_url(i)
 	    }
 	    items.append(item)
 	    if cached is None:
-		cache.set(str(i.id), item, timeout=60*30)
+		cache.set(str(i.id), item, timeout=app.config['CACHE_TIME'])
 	return jsonify({'total_count': total, 'items': items}), 200
     except Exception as e:
 	logger.exception(e)
@@ -385,16 +354,20 @@ def stat_get():
 	logger.error(e)
 	abort(400)
     try:
-	s = db.session.query(Cltx)
+	query = db.session.query(Cltx)
 	if args.get('st', None) is not None:
-	    s = s.filter(Cltx.jgsj >= arrow.get(args['st']).datetime.replace(tzinfo=None))
+	    query = query.filter(Cltx.jgsj >= arrow.get(args['st']).datetime.replace(tzinfo=None))
 	if args.get('et', None) is not None:
-	    s = s.filter(Cltx.jgsj <= arrow.get(args['et']).datetime.replace(tzinfo=None))
+	    query = query.filter(Cltx.jgsj <= arrow.get(args['et']).datetime.replace(tzinfo=None))
 	if args.get('kkdd', None) is not None:
-	    kkdd_name = get_kkdd_id_dict().get(args['kkdd'], None)
-	    s = s.filter(Cltx.wzdd == kkdd_name)
+	    if app.config.get('KKDD2KKBH', None) is None:
+	        query = query.filter(Cltx.wzdd == helper_kk.get_kkdd_id_dict().get(args['kkdd'], None))
+	    else:
+		query = query.filter(Cltx.kkbh == app.config['KKDD2KKBH'].get(args['kkdd'], None))
+	if args.get('fxbh', None) is not None:
+	    query = query.filter(Cltx.fxbh == app.config['CODE2FXBH'].get(args['fxbh'], None))
 
-	return jsonify({'count': s.count()}), 200
+	return jsonify({'count': query.count()}), 200
     except Exception as e:
 	logger.exception(e)
 
@@ -414,15 +387,14 @@ def bkcp_list_get():
     try:
 	limit = int(args.get('per_page', 20))
 	offset = (int(args.get('page', 1)) - 1) * limit
-	s = db.session.query(Bkcp)
+	query = db.session.query(Bkcp)
 	if args.get('hphm', None) is None:
-	    s = s.filter(Bkcp.clbj == 'T')
+	    query = query.filter(Bkcp.clbj == 'T')
 	else:
-	    s = s.filter(Bkcp.hphm == args['hphm'])
+	    query = query.filter(Bkcp.hphm == args['hphm'])
 	
-	total = s.count()
 	items = []
-	for i in s.limit(limit).offset(offset).all():
+	for i in query.limit(limit).offset(offset).all():
 	    if i.mobiles is None or i.mobiles == '':
 		mobiles = []
 	    else:
@@ -433,7 +405,7 @@ def bkcp_list_get():
 		'mobiles': mobiles,
 		'memo': i.memo
 	    })
-	return jsonify({'total_count': total, 'items': items}), 200
+	return jsonify({'total_count': query.count(), 'items': items}), 200
     except Exception as e:
 	logger.exception(e)
 
