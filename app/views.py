@@ -33,6 +33,7 @@ def verify_addr(f):
 
 
 @auth.verify_password
+@cache.memoize(3600)
 def verify_pw(username, password):
     user = Users.query.filter_by(username=username).first()
     if user:
