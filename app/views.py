@@ -37,8 +37,6 @@ def verify_addr(f):
 def verify_pw(username, password):
     user = Users.query.filter_by(username=username).first()
     if user:
-        g.uid = user.id
-        g.scope = set(user.scope.split(','))
         return sha256_crypt.verify(password, user.password)
     return False
 
@@ -48,6 +46,8 @@ def verify_scope(scope):
         """权限范围验证装饰器"""
         @wraps(f)
         def decorated_function(*args, **kwargs):
+	    user = Users.query.filter_by(username=username).first()
+	    g.scope = set(user.scope.split(','))
             if 'all' in g.scope or scope in g.scope:
                 return f(*args, **kwargs)
             else:
@@ -60,13 +60,14 @@ def verify_scope(scope):
 @limiter.limit("5000/hour")
 def index_get():
     result = {
-        'user_url': 'http://%suser{/user_id}' % (request.url_root),
-        'scope_url': 'http://%sscope' % (request.url_root),
-        # 'token_url': 'http://%stoken' % (request.url_root),
-	'kkdd_url': 'http://%skkdd{/kkdd_id}' % (request.url_root),
-	'maxid_url': 'http://%smaxid' % (request.url_root),
-	'stat_url': 'http://%sstat{/st}{/et}{/kkdd_id}' % (request.url_root),
-        'kakou_url': 'http://%skakou{/start_id}{/end_id}' % (request.url_root)
+        'user_url': '%suser{/user_id}' % (request.url_root),
+        'scope_url': '{0}scope'.format(request.url_root),
+	'maxid_url': '{0}cltx/maxid'.format(request.url_root),
+	'stat_url': '%sstat?q={}' % (request.url_root),
+        'cltx_url': '%scltx{/id}?q={}' % (request.url_root),
+	'cltx_list_url': '%scltx?q={}' % (request.url_root),
+        'bkcp_url': '%sbkcp{/id}?q={}' % (request.url_root),
+	'bkcp_list_url': '%sbkcp?q={}' % (request.url_root),
     }
     header = {'Cache-Control': 'public, max-age=60, s-maxage=60'}
     return jsonify(result), 200, header
