@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import json
 from functools import wraps
 import shutil
@@ -33,7 +33,7 @@ def verify_addr(f):
 
 
 @auth.verify_password
-@cache.memoize(3600)
+@cache.memoize(60 * 5)
 def verify_pw(username, password):
     user = Users.query.filter_by(username=username).first()
     if user:

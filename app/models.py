@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import arrow
 
 from . import db
@@ -50,6 +50,7 @@ class Scope(db.Model):
 
     def __repr__(self):
         return '<Scope %r>' % self.id
+
 
 class Kkdd(db.Model):
     """卡口地点"""
