@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 import logging
 
 import arrow
@@ -35,9 +35,10 @@ limiter.header_mapping = {
     HEADERS.REMAINING: "X-RateLimit-Remaining"
 }
 
-cache = Cache(app)
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
 from . import views
+
 
 @app.after_request
 def after_request(response):
